@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions 
+    name="SQLService"
+    targetNamespace="http://services.soadb.example.com/sql"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:tns="http://services.soadb.example.com/sql"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+    <!-- Definición de tipos -->
+    <wsdl:types>
+        <xsd:schema targetNamespace="http://services.soadb.example.com/sql">
+            <!-- Tipo para listDatabases -->
+            <xsd:element name="listDatabases">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="session_token" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="listDatabasesResponse" type="xsd:string"/>
+
+            <!-- Tipo para createDatabase -->
+            <xsd:element name="createDatabase">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="session_token" type="xsd:string"/>
+                        <xsd:element name="database_name" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="createDatabaseResponse" type="xsd:string"/>
+
+            <!-- Tipo para dropDatabase -->
+            <xsd:element name="dropDatabase">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="session_token" type="xsd:string"/>
+                        <xsd:element name="database_name" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="dropDatabaseResponse" type="xsd:string"/>
+
+            <!-- Tipo para listTables -->
+            <xsd:element name="listTables">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="session_token" type="xsd:string"/>
+                        <xsd:element name="database_name" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="listTablesResponse" type="xsd:string"/>
+
+            <!-- Tipo para createTable -->
+            <xsd:element name="createTable">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="session_token" type="xsd:string"/>
+                        <xsd:element name="database_name" type="xsd:string"/>
+                        <xsd:element name="table_name" type="xsd:string"/>
+                        <xsd:element name="fields_json" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="createTableResponse" type="xsd:string"/>
+
+            <!-- Tipo para dropTable -->
+            <xsd:element name="dropTable">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="session_token" type="xsd:string"/>
+                        <xsd:element name="database_name" type="xsd:string"/>
+                        <xsd:element name="table_name" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="dropTableResponse" type="xsd:string"/>
+
+            <!-- Tipo para insert -->
+            <xsd:element name="insert">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="session_token" type="xsd:string"/>
+                        <xsd:element name="database_name" type="xsd:string"/>
+                        <xsd:element name="table_name" type="xsd:string"/>
+                        <xsd:element name="data_json" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="insertResponse" type="xsd:string"/>
+
+            <!-- Tipo para update -->
+            <xsd:element name="update">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="session_token" type="xsd:string"/>
+                        <xsd:element name="database_name" type="xsd:string"/>
+                        <xsd:element name="table_name" type="xsd:string"/>
+                        <xsd:element name="data_json" type="xsd:string"/>
+                        <xsd:element name="where_json" type="xsd:string" minOccurs="0"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="updateResponse" type="xsd:string"/>
+
+            <!-- Tipo para delete -->
+            <xsd:element name="delete">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="session_token" type="xsd:string"/>
+                        <xsd:element name="database_name" type="xsd:string"/>
+                        <xsd:element name="table_name" type="xsd:string"/>
+                        <xsd:element name="where_json" type="xsd:string" minOccurs="0"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="deleteResponse" type="xsd:string"/>
+
+            <!-- Tipo para select -->
+            <xsd:element name="select">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="session_token" type="xsd:string"/>
+                        <xsd:element name="database_name" type="xsd:string"/>
+                        <xsd:element name="table_name" type="xsd:string"/>
+                        <xsd:element name="fields" type="xsd:string" minOccurs="0"/>
+                        <xsd:element name="where_json" type="xsd:string" minOccurs="0"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="selectResponse" type="xsd:string"/>
+
+            <!-- Tipo para join -->
+            <xsd:element name="join">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="session_token" type="xsd:string"/>
+                        <xsd:element name="database_name" type="xsd:string"/>
+                        <xsd:element name="join_query" type="xsd:string"/>
+                        <xsd:element name="params_json" type="xsd:string" minOccurs="0"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="joinResponse" type="xsd:string"/>
+
+            <!-- Tipo para aggregate -->
+            <xsd:element name="aggregate">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="session_token" type="xsd:string"/>
+                        <xsd:element name="database_name" type="xsd:string"/>
+                        <xsd:element name="table_name" type="xsd:string"/>
+                        <xsd:element name="operation" type="xsd:string"/>
+                        <xsd:element name="field" type="xsd:string"/>
+                        <xsd:element name="group_by" type="xsd:string" minOccurs="0"/>
+                        <xsd:element name="where_json" type="xsd:string" minOccurs="0"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="aggregateResponse" type="xsd:string"/>
+        </xsd:schema>
+    </wsdl:types>
+
+    <!-- Definición de mensajes -->
+    <wsdl:message name="listDatabasesRequest">
+        <wsdl:part name="parameters" element="tns:listDatabases"/>
+    </wsdl:message>
+    <wsdl:message name="listDatabasesResponse">
+        <wsdl:part name="parameters" element="tns:listDatabasesResponse"/>
+    </wsdl:message>
+    
+    <wsdl:message name="createDatabaseRequest">
+        <wsdl:part name="parameters" element="tns:createDatabase"/>
+    </wsdl:message>
+    <wsdl:message name="createDatabaseResponse">
+        <wsdl:part name="parameters" element="tns:createDatabaseResponse"/>
+    </wsdl:message>
+    
+    <wsdl:message name="dropDatabaseRequest">
+        <wsdl:part name="parameters" element="tns:dropDatabase"/>
+    </wsdl:message>
+    <wsdl:message name="dropDatabaseResponse">
+        <wsdl:part name="parameters" element="tns:dropDatabaseResponse"/>
+    </wsdl:message>
+    
+    <wsdl:message name="listTablesRequest">
+        <wsdl:part name="parameters" element="tns:listTables"/>
+    </wsdl:message>
+    <wsdl:message name="listTablesResponse">
+        <wsdl:part name="parameters" element="tns:listTablesResponse"/>
+    </wsdl:message>
+    
+    <wsdl:message name="createTableRequest">
+        <wsdl:part name="parameters" element="tns:createTable"/>
+    </wsdl:message>
+    <wsdl:message name="createTableResponse">
+        <wsdl:part name="parameters" element="tns:createTableResponse"/>
+    </wsdl:message>
+    
+    <wsdl:message name="dropTableRequest">
+        <wsdl:part name="parameters" element="tns:dropTable"/>
+    </wsdl:message>
+    <wsdl:message name="dropTableResponse">
+        <wsdl:part name="parameters" element="tns:dropTableResponse"/>
+    </wsdl:message>
+    
+    <wsdl:message name="insertRequest">
+        <wsdl:part name="parameters" element="tns:insert"/>
+    </wsdl:message>
+    <wsdl:message name="insertResponse">
+        <wsdl:part name="parameters" element="tns:insertResponse"/>
+    </wsdl:message>
+    
+    <wsdl:message name="updateRequest">
+        <wsdl:part name="parameters" element="tns:update"/>
+    </wsdl:message>
+    <wsdl:message name="updateResponse">
+        <wsdl:part name="parameters" element="tns:updateResponse"/>
+    </wsdl:message>
+    
+    <wsdl:message name="deleteRequest">
+        <wsdl:part name="parameters" element="tns:delete"/>
+    </wsdl:message>
+    <wsdl:message name="deleteResponse">
+        <wsdl:part name="parameters" element="tns:deleteResponse"/>
+    </wsdl:message>
+    
+    <wsdl:message name="selectRequest">
+        <wsdl:part name="parameters" element="tns:select"/>
+    </wsdl:message>
+    <wsdl:message name="selectResponse">
+        <wsdl:part name="parameters" element="tns:selectResponse"/>
+    </wsdl:message>
+    
+    <wsdl:message name="joinRequest">
+        <wsdl:part name="parameters" element="tns:join"/>
+    </wsdl:message>
+    <wsdl:message name="joinResponse">
+        <wsdl:part name="parameters" element="tns:joinResponse"/>
+    </wsdl:message>
+    
+    <wsdl:message name="aggregateRequest">
+        <wsdl:part name="parameters" element="tns:aggregate"/>
+    </wsdl:message>
+    <wsdl:message name="aggregateResponse">
+        <wsdl:part name="parameters" element="tns:aggregateResponse"/>
+    </wsdl:message>
+
+    <!-- Definición de port types -->
+    <wsdl:portType name="SQLServicePortType">
+        <wsdl:operation name="listDatabases">
+            <wsdl:input message="tns:listDatabasesRequest"/>
+            <wsdl:output message="tns:listDatabasesResponse"/>
+        </wsdl:operation>
+        
+        <wsdl:operation name="createDatabase">
+            <wsdl:input message="tns:createDatabaseRequest"/>
+            <wsdl:output message="tns:createDatabaseResponse"/>
+        </wsdl:operation>
+        
+        <wsdl:operation name="dropDatabase">
+            <wsdl:input message="tns:dropDatabaseRequest"/>
+            <wsdl:output message="tns:dropDatabaseResponse"/>
+        </wsdl:operation>
+        
+        <wsdl:operation name="listTables">
+            <wsdl:input message="tns:listTablesRequest"/>
+            <wsdl:output message="tns:listTablesResponse"/>
+        </wsdl:operation>
+        
+        <wsdl:operation name="createTable">
+            <wsdl:input message="tns:createTableRequest"/>
+            <wsdl:output message="tns:createTableResponse"/>
+        </wsdl:operation>
+        
+        <wsdl:operation name="dropTable">
+            <wsdl:input message="tns:dropTableRequest"/>
+            <wsdl:output message="tns:dropTableResponse"/>
+        </wsdl:operation>
+        
+        <wsdl:operation name="insert">
+            <wsdl:input message="tns:insertRequest"/>
+            <wsdl:output message="tns:insertResponse"/>
+        </wsdl:operation>
+        
+        <wsdl:operation name="update">
+            <wsdl:input message="tns:updateRequest"/>
+            <wsdl:output message="tns:updateResponse"/>
+        </wsdl:operation>
+        
+        <wsdl:operation name="delete">
+            <wsdl:input message="tns:deleteRequest"/>
+            <wsdl:output message="tns:deleteResponse"/>
+        </wsdl:operation>
+        
+        <wsdl:operation name="select">
+            <wsdl:input message="tns:selectRequest"/>
+            <wsdl:output message="tns:selectResponse"/>
+        </wsdl:operation>
+        
+        <wsdl:operation name="join">
+            <wsdl:input message="tns:joinRequest"/>
+            <wsdl:output message="tns:joinResponse"/>
+        </wsdl:operation>
+        
+        <wsdl:operation name="aggregate">
+            <wsdl:input message="tns:aggregateRequest"/>
+            <wsdl:output message="tns:aggregateResponse"/>
+        </wsdl:operation>
+    </wsdl:portType>
+
+    <!-- Binding (conexión con protocolo SOAP) -->
+    <wsdl:binding name="SQLServiceSoapBinding" type="tns:SQLServicePortType">
+        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+        
+        <wsdl:operation name="listDatabases">
+            <soap:operation soapAction="http://services.soadb.example.com/sql/listDatabases"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        
+        <wsdl:operation name="createDatabase">
+            <soap:operation soapAction="http://services.soadb.example.com/sql/createDatabase"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        
+        <wsdl:operation name="dropDatabase">
+            <soap:operation soapAction="http://services.soadb.example.com/sql/dropDatabase"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        
+        <wsdl:operation name="listTables">
+            <soap:operation soapAction="http://services.soadb.example.com/sql/listTables"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        
+        <wsdl:operation name="createTable">
+            <soap:operation soapAction="http://services.soadb.example.com/sql/createTable"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        
+        <wsdl:operation name="dropTable">
+            <soap:operation soapAction="http://services.soadb.example.com/sql/dropTable"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        
+        <wsdl:operation name="insert">
+            <soap:operation soapAction="http://services.soadb.example.com/sql/insert"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        
+        <wsdl:operation name="update">
+            <soap:operation soapAction="http://services.soadb.example.com/sql/update"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        
+        <wsdl:operation name="delete">
+            <soap:operation soapAction="http://services.soadb.example.com/sql/delete"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        
+        <wsdl:operation name="select">
+            <soap:operation soapAction="http://services.soadb.example.com/sql/select"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        
+        <wsdl:operation name="join">
+            <soap:operation soapAction="http://services.soadb.example.com/sql/join"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        
+        <wsdl:operation name="aggregate">
+            <soap:operation soapAction="http://services.soadb.example.com/sql/aggregate"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+    </wsdl:binding>
+
+    <!-- Definición del servicio -->
+    <wsdl:service name="SQLService">
+        <wsdl:port name="SQLServicePort" binding="tns:SQLServiceSoapBinding">
+            <soap:address location="http://localhost:8000/soap"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

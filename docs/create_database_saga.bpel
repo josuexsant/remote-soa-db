@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<process name="CreateDatabaseSaga"
+         targetNamespace="http://services.soadb.example.com/bpel/CreateDatabaseSaga"
+         xmlns="http://docs.oasis-open.org/wsbpel/2.0/process/executable"
+         xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+         xmlns:sql="http://services.soadb.example.com/sql"
+         xmlns:nosql="http://services.soadb.example.com/nosql">
+         
+    <!-- Declaración de partner links -->
+    <partnerLinks>
+        <partnerLink name="client"
+                     partnerLinkType="client:CreateDatabaseSagaLT"
+                     myRole="CreateDatabaseSagaProvider"/>
+                     
+        <partnerLink name="sqlService"
+                     partnerLinkType="sql:SQLServiceLT"
+                     partnerRole="SQLServiceProvider"/>
+                     
+        <partnerLink name="nosqlService"
+                     partnerLinkType="nosql:NoSQLServiceLT"
+                     partnerRole="NoSQLServiceProvider"/>
+    </partnerLinks>
+    
+    <!-- Declaración de variables -->
+    <variables>
+        <!-- Variables para la solicitud y respuesta del proceso -->
+        <variable name="request" messageType="client:CreateDatabaseSagaRequest"/>
+        <variable name="response" messageType="client:CreateDatabaseSagaResponse"/>
+        
+        <!-- Variables para SQL Service -->
+        <variable name="sqlCreateDatabaseRequest" messageType="sql:createDatabaseRequest"/>
+        <variable name="sqlCreateDatabaseResponse" messageType="sql:createDatabaseResponse"/>
+        <variable name="sqlCreateTableRequest" messageType="sql:createTableRequest"/>
+        <variable name="sqlCreateTableResponse" messageType="sql:createTableResponse"/>
+        <variable name="sqlInsertRequest" messageType="sql:insertRequest"/>
+        <variable name="sqlInsertResponse" messageType="sql:insertResponse"/>
+        <variable name="sqlDropTableRequest" messageType="sql:dropTableRequest"/>
+        <variable name="sqlDropTableResponse" messageType="sql:dropTableResponse"/>
+        <variable name="sqlDropDatabaseRequest" messageType="sql:dropDatabaseRequest"/>
+        <variable name="sqlDropDatabaseResponse" messageType="sql:dropDatabaseResponse"/>
+        
+        <!-- Variables para NoSQL Service -->
+        <variable name="nosqlCreateDatabaseRequest" messageType="nosql:createDatabaseRequest"/>
+        <variable name="nosqlCreateDatabaseResponse" messageType="nosql:createDatabaseResponse"/>
+        <variable name="nosqlCreateCollectionRequest" messageType="nosql:createCollectionRequest"/>
+        <variable name="nosqlCreateCollectionResponse" messageType="nosql:createCollectionResponse"/>
+        <variable name="nosqlInsertDocumentRequest" messageType="nosql:insertDocumentRequest"/>
+        <variable name="nosqlInsertDocumentResponse" messageType="nosql:insertDocumentResponse"/>
+        <variable name="nosqlDropCollectionRequest" messageType="nosql:dropCollectionRequest"/>
+        <variable name="nosqlDropCollectionResponse" messageType="nosql:dropCollectionResponse"/>
+        <variable name="nosqlDropDatabaseRequest" messageType="nosql:dropDatabaseRequest"/>
+        <variable name="nosqlDropDatabaseResponse" messageType="nosql:dropDatabaseResponse"/>
+        
+        <!-- Variables para faults -->
+        <variable name="faultInfo" messageType="client:faultMessage"/>
+    </variables>
+    
+    <!-- Controladores de fallas -->
+    <faultHandlers>
+        <catchAll>
+            <sequence>
+                <assign>
+                    <copy>
+                        <from>
+                            <literal>
+                                <client:CreateDatabaseSagaResponse>
+                                    <success>false</success>
+                                    <message>Error general en el proceso Saga</message>
+                                </client:CreateDatabaseSagaResponse>
+                            </literal>
+                        </from>
+                        <to variable="response"/>
+                    </copy>
+                </assign>
+                <reply partnerLink="client" 
+                       portType="client:CreateDatabaseSagaPT" 
+                       operation="process" 
+                       variable="response"/>
+            </sequence>
+        </catchAll>
+    </faultHandlers>
+    
+    <!-- Cuerpo principal del proceso -->
+    <sequence>
+        <!-- Recibir solicitud del cliente -->
+        <receive partnerLink="client"
+                 portType="client:CreateDatabaseSagaPT"
+                 operation="process"
+                 variable="request"
+                 createInstance="yes"/>
+        
+        <!-- PARTE 1: Creación de base de datos SQL -->
+        <scope name="SQLCreateDatabaseScope">
+            <faultHandlers>
+                <catchAll>
+                    <assign>
+                        <copy>
+                            <from>
+                                <literal>
+                                    <client:CreateDatabaseSagaResponse>
+                                        <success>false</success>
+                                        <message>Error al crear la base de datos SQL</message>
+                                    </client:CreateDatabaseSagaResponse>
+                                </literal>
+                            </from>
+                            <to variable="response"/>
+                        </copy>
+                    </assign>
+                </catchAll>
+            </faultHandlers>
+            
+            <sequence>
+                <!-- Preparar request -->
+                <assign>
+                    <copy>
+                        <from variable="request" part="session_token"/>
+                        <to variable="sqlCreateDatabaseRequest" part="session_token"/>
+                    </copy>
+                    <copy>
+                        <from variable="request" part="database_name"/>
+                        <to variable="sqlCreateDatabaseRequest" part="database_name"/>
+                    </copy>
+                </assign>
+                
+                <!-- Invocar servicio -->
+                <invoke partnerLink="sqlService"
+                        portType="sql:SQLServicePortType"
+                        operation="createDatabase"
+                        inputVariable="sqlCreateDatabaseRequest"
+                        outputVariable="sqlCreateDatabaseResponse"/>
+                
+                <!-- Verificar respuesta -->
+                <if>
+                    <condition>contains(string(sqlCreateDatabaseResponse), 'success":false')</condition>
+                    <throw faultName="client:DatabaseCreationError"/>
+                </if>
+            </sequence>
+        </scope>
+        
+        <!-- PARTE 2: Creación de tabla SQL -->
+        <scope name="SQLCreateTableScope">
+            <faultHandlers>
+                <catchAll>
+                    <!-- Compensación: Eliminar base de datos SQL -->
+                    <sequence>
+                        <assign>
+                            <copy>
+                                <from variable="request" part="session_token"/>
+                                <to variable="sqlDropDatabaseRequest" part="session_token"/>
+                            </copy>
+                            <copy>
+                                <from variable="request" part="database_name"/>
+                                <to variable="sqlDropDatabaseRequest" part="database_name"/>
+                            </copy>
+                        </assign>
+                        
+                        <invoke partnerLink="sqlService"
+                                portType="sql:SQLServicePortType"
+                                operation="dropDatabase"
+                                inputVariable="sqlDropDatabaseRequest"
+                                outputVariable="sqlDropDatabaseResponse"/>
+                        
+                        <assign>
+                            <copy>
+                                <from>
+                                    <literal>
+                                        <client:CreateDatabaseSagaResponse>
+                                            <success>false</success>
+                                            <message>Error al crear la tabla SQL</message>
+                                        </client:CreateDatabaseSagaResponse>
+                                    </literal>
+                                </from>
+                                <to variable="response"/>
+                            </copy>
+                        </assign>
+                    </sequence>
+                </catchAll>
+            </faultHandlers>
+            
+            <sequence>
+                <!-- Preparar request -->
+                <assign>
+                    <copy>
+                        <from variable="request" part="session_token"/>
+                        <to variable="sqlCreateTableRequest" part="session_token"/>
+                    </copy>
+                    <copy>
+                        <from variable="request" part="database_name"/>
+                        <to variable="sqlCreateTableRequest" part="database_name"/>
+                    </copy>
+                    <copy>
+                        <from variable="request" part="table_name"/>
+                        <to variable="sqlCreateTableRequest" part="table_name"/>
+                    </copy>
+                    <copy>
+                        <from variable="request" part="table_fields"/>
+                        <to variable="sqlCreateTableRequest" part="fields_json"/>
+                    </copy>
+                </assign>
+                
+                <!-- Invocar servicio -->
+                <invoke partnerLink="sqlService"
+                        portType="sql:SQLServicePortType"
+                        operation="createTable"
+                        inputVariable="sqlCreateTableRequest"
+                        outputVariable="sqlCreateTableResponse"/>
+                
+                <!-- Verificar respuesta -->
+                <if>
+                    <condition>contains(string(sqlCreateTableResponse), 'success":false')</condition>
+                    <throw faultName="client:TableCreationError"/>
+                </if>
+            </sequence>
+        </scope>
+        
+        <!-- PARTE 3: Inserción de datos SQL -->
+        <scope name="SQLInsertDataScope">
+            <faultHandlers>
+                <catchAll>
+                    <!-- Compensación: Eliminar tabla SQL -->
+                    <sequence>
+                        <assign>
+                            <copy>
+                                <from variable="request" part="session_token"/>
+                                <to variable="sqlDropTableRequest" part="session_token"/>
+                            </copy>
+                            <copy>
+                                <from variable="request" part="database_name"/>
+                                <to variable="sqlDropTableRequest" part="database_name"/>
+                            </copy>
+                            <copy>
+                                <from variable="request" part="table_name"/>
+                                <to variable="sqlDropTableRequest" part="table_name"/>
+                            </copy>
+                        </assign>
+                        
+                        <invoke partnerLink="sqlService"
+                                portType="sql:SQLServicePortType"
+                                operation="dropTable"
+                                inputVariable="sqlDropTableRequest"
+                                outputVariable="sqlDropTableResponse"/>
+                        
+                        <!-- Eliminar base de datos SQL -->
+                        <assign>
+                            <copy>
+                                <from variable="request" part="session_token"/>
+                                <to variable="sqlDropDatabaseRequest" part="session_token"/>
+                            </copy>
+                            <copy>
+                                <from variable="request" part="database_name"/>
+                                <to variable="sqlDropDatabaseRequest" part="database_name"/>
+                            </copy>
+                        </assign>
+                        
+                        <invoke partnerLink="sqlService"
+                                portType="sql:SQLServicePortType"
+                                operation="dropDatabase"
+                                inputVariable="sqlDropDatabaseRequest"
+                                outputVariable="sqlDropDatabaseResponse"/>
+                        
+                        <assign>
+                            <copy>
+                                <from>
+                                    <literal>
+                                        <client:CreateDatabaseSagaResponse>
+                                            <success>false</success>
+                                            <message>Error al insertar datos SQL</message>
+                                        </client:CreateDatabaseSagaResponse>
+                                    </literal>
+                                </from>
+                                <to variable="response"/>
+                            </copy>
+                        </assign>
+                    </sequence>
+                </catchAll>
+            </faultHandlers>
+            
+            <sequence>
+                <!-- Preparar request -->
+                <assign>
+                    <copy>
+                        <from variable="request" part="session_token"/>
+                        <to variable="sqlInsertRequest" part="session_token"/>
+                    </copy>
+                    <copy>
+                        <from variable="request" part="database_name"/>
+                        <to variable="sqlInsertRequest" part="database_name"/>
+                    </copy>
+                    <copy>
+                        <from variable="request" part="table_name"/>
+                        <to variable="sqlInsertRequest" part="table_name"/>
+                    </copy>
+                    <copy>
+                        <from variable="request" part="sample_data"/>
+                        <to variable="sqlInsertRequest" part="data_json"/>
+                    </copy>
+                </assign>
+                
+                <!-- Invocar servicio -->
+                <invoke partnerLink="sqlService"
+                        portType="sql:SQLServicePortType"
+                        operation="insert"
+                        inputVariable="sqlInsertRequest"
+                        outputVariable="sqlInsertResponse"/>
+                
+                <!-- Verificar respuesta -->
+                <if>
+                    <condition>contains(string(sqlInsertResponse), 'success":false')</condition>
+                    <throw faultName="client:DataInsertionError"/>
+                </if>
+            </sequence>
+        </scope>
+        
+        <!-- PARTE 4: Creación de base de datos NoSQL -->
+        <scope name="NoSQLCreateDatabaseScope">
+            <faultHandlers>
+                <catchAll>
+                    <!-- No hay compensación necesaria para la base de datos SQL, ya está establecida correctamente -->
+                    <assign>
+                        <copy>
+                            <from>
+                                <literal>
+                                    <client:CreateDatabaseSagaResponse>
+                                        <success>true</success>
+                                        <message>Base de datos SQL creada correctamente, pero falló la creación de la base de datos NoSQL</message>
+                                    </client:CreateDatabaseSagaResponse>
+                                </literal>
+                            </from>
+                            <to variable="response"/>
+                        </copy>
+                    </assign>
+                </catchAll>
+            </faultHandlers>
+            
+            <sequence>
+                <!-- Preparar request -->
+                <assign>
+                    <copy>
+                        <from variable="request" part="session_token"/>
+                        <to variable="nosqlCreateDatabaseRequest" part="session_token"/>
+                    </copy>
+                    <copy>
+                        <from variable="request" part="database_name"/>
+                        <to variable="nosqlCreateDatabaseRequest" part="database_name"/>
+                    </copy>
+                </assign>
+                
+                <!-- Invocar servicio -->
+                <invoke partnerLink="nosqlService"
+                        portType="nosql:NoSQLServicePortType"
+                        operation="createDatabase"
+                        inputVariable="nosqlCreateDatabaseRequest"
+                        outputVariable="nosqlCreateDatabaseResponse"/>
+                
+                <!-- Verificar respuesta -->
+                <if>
+                    <condition>contains(string(nosqlCreateDatabaseResponse), 'success":false')</condition>
+                    <throw faultName="client:NoSQLDatabaseCreationError"/>
+                </if>
+            </sequence>
+        </scope>
+        
+        <!-- Preparar respuesta exitosa -->
+        <assign>
+            <copy>
+                <from>
+                    <literal>
+                        <client:CreateDatabaseSagaResponse>
+                            <success>true</success>
+                            <message>Proceso completado exitosamente. Se crearon las bases de datos SQL y NoSQL.</message>
+                        </client:CreateDatabaseSagaResponse>
+                    </literal>
+                </from>
+                <to variable="response"/>
+            </copy>
+        </assign>
+        
+        <!-- Enviar respuesta al cliente -->
+        <reply partnerLink="client"
+               portType="client:CreateDatabaseSagaPT"
+               operation="process"
+               variable="response"/>
+    </sequence>
+</process>

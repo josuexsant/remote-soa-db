@@ -1,0 +1,420 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Ejemplos de solicitudes SOAP para SOA Database -->
+
+<!-- SERVICIO DE AUTENTICACIÓN -->
+
+<!-- 1. Iniciar sesión con OAuth2 -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:auth="http://services.soadb.example.com/auth">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <auth:login>
+         <provider>google</provider>
+         <authorization_code>CÓDIGO_DE_AUTORIZACIÓN_DE_GOOGLE</authorization_code>
+         <redirect_uri>http://localhost:8080/callback</redirect_uri>
+      </auth:login>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 2. Cerrar sesión -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:auth="http://services.soadb.example.com/auth">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <auth:logout>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+      </auth:logout>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 3. Validar token de sesión -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:auth="http://services.soadb.example.com/auth">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <auth:validateToken>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+      </auth:validateToken>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 4. Obtener rol de usuario -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:auth="http://services.soadb.example.com/auth">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <auth:getUserRole>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+      </auth:getUserRole>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 5. Registrar usuario -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:auth="http://services.soadb.example.com/auth">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <auth:register>
+         <username>usuario_nuevo</username>
+         <email>usuario@ejemplo.com</email>
+         <provider>google</provider>
+      </auth:register>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- SERVICIO SQL -->
+
+<!-- 1. Listar bases de datos -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sql="http://services.soadb.example.com/sql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <sql:listDatabases>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+      </sql:listDatabases>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 2. Crear base de datos -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sql="http://services.soadb.example.com/sql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <sql:createDatabase>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_de_datos</database_name>
+      </sql:createDatabase>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 3. Eliminar base de datos -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sql="http://services.soadb.example.com/sql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <sql:dropDatabase>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_de_datos</database_name>
+      </sql:dropDatabase>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 4. Listar tablas -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sql="http://services.soadb.example.com/sql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <sql:listTables>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_de_datos</database_name>
+      </sql:listTables>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 5. Crear tabla -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sql="http://services.soadb.example.com/sql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <sql:createTable>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_de_datos</database_name>
+         <table_name>clientes</table_name>
+         <fields_json>[
+            {"name": "id", "type": "INT", "nullable": false, "auto_increment": true, "primary_key": true},
+            {"name": "nombre", "type": "VARCHAR(100)", "nullable": false},
+            {"name": "email", "type": "VARCHAR(255)", "nullable": false},
+            {"name": "edad", "type": "INT", "nullable": true},
+            {"name": "fecha_registro", "type": "TIMESTAMP", "default": "CURRENT_TIMESTAMP"}
+         ]</fields_json>
+      </sql:createTable>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 6. Eliminar tabla -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sql="http://services.soadb.example.com/sql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <sql:dropTable>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_de_datos</database_name>
+         <table_name>clientes</table_name>
+      </sql:dropTable>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 7. Insertar datos -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sql="http://services.soadb.example.com/sql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <sql:insert>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_de_datos</database_name>
+         <table_name>clientes</table_name>
+         <data_json>[
+            {
+               "nombre": "Juan Pérez",
+               "email": "juan@ejemplo.com",
+               "edad": 30
+            },
+            {
+               "nombre": "María García",
+               "email": "maria@ejemplo.com",
+               "edad": 25
+            }
+         ]</data_json>
+      </sql:insert>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 8. Actualizar datos -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sql="http://services.soadb.example.com/sql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <sql:update>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_de_datos</database_name>
+         <table_name>clientes</table_name>
+         <data_json>{"nombre": "Juan Pérez Actualizado", "edad": 31}</data_json>
+         <where_json>{"id": 1}</where_json>
+      </sql:update>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 9. Eliminar datos -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sql="http://services.soadb.example.com/sql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <sql:delete>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_de_datos</database_name>
+         <table_name>clientes</table_name>
+         <where_json>{"id": 1}</where_json>
+      </sql:delete>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 10. Consultar datos -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sql="http://services.soadb.example.com/sql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <sql:select>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_de_datos</database_name>
+         <table_name>clientes</table_name>
+         <fields>nombre, email, edad</fields>
+         <where_json>{"edad": 25}</where_json>
+      </sql:select>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 11. Realizar JOIN -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sql="http://services.soadb.example.com/sql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <sql:join>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_de_datos</database_name>
+         <join_query>SELECT c.nombre, c.email, p.nombre AS producto, p.precio FROM clientes c JOIN pedidos p ON c.id = p.cliente_id</join_query>
+      </sql:join>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 12. Realizar agregación -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sql="http://services.soadb.example.com/sql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <sql:aggregate>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_de_datos</database_name>
+         <table_name>clientes</table_name>
+         <operation>AVG</operation>
+         <field>edad</field>
+         <group_by>ciudad</group_by>
+      </sql:aggregate>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- SERVICIO NOSQL -->
+
+<!-- 1. Listar bases de datos -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nosql="http://services.soadb.example.com/nosql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <nosql:listDatabases>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+      </nosql:listDatabases>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 2. Crear base de datos -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nosql="http://services.soadb.example.com/nosql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <nosql:createDatabase>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_nosql</database_name>
+      </nosql:createDatabase>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 3. Eliminar base de datos -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nosql="http://services.soadb.example.com/nosql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <nosql:dropDatabase>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_nosql</database_name>
+      </nosql:dropDatabase>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 4. Listar colecciones -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nosql="http://services.soadb.example.com/nosql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <nosql:listCollections>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_nosql</database_name>
+      </nosql:listCollections>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 5. Crear colección -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nosql="http://services.soadb.example.com/nosql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <nosql:createCollection>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_nosql</database_name>
+         <collection_name>usuarios</collection_name>
+      </nosql:createCollection>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 6. Eliminar colección -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nosql="http://services.soadb.example.com/nosql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <nosql:dropCollection>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_nosql</database_name>
+         <collection_name>usuarios</collection_name>
+      </nosql:dropCollection>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 7. Insertar documento -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nosql="http://services.soadb.example.com/nosql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <nosql:insertDocument>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_nosql</database_name>
+         <collection_name>usuarios</collection_name>
+         <documents_json>[
+            {
+               "nombre": "Juan Pérez",
+               "email": "juan@ejemplo.com",
+               "edad": 30,
+               "dirección": {
+                  "calle": "Av. Principal",
+                  "ciudad": "Madrid",
+                  "pais": "España"
+               },
+               "intereses": ["deportes", "música", "tecnología"]
+            },
+            {
+               "nombre": "María García",
+               "email": "maria@ejemplo.com",
+               "edad": 25,
+               "dirección": {
+                  "calle": "Calle Nueva",
+                  "ciudad": "Barcelona",
+                  "pais": "España"
+               },
+               "intereses": ["arte", "lectura", "viajes"]
+            }
+         ]</documents_json>
+      </nosql:insertDocument>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 8. Actualizar documento -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nosql="http://services.soadb.example.com/nosql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <nosql:updateDocument>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_nosql</database_name>
+         <collection_name>usuarios</collection_name>
+         <filter_json>{"email": "juan@ejemplo.com"}</filter_json>
+         <update_json>{"$set": {"edad": 31, "intereses": ["deportes", "música", "tecnología", "viajes"]}}</update_json>
+      </nosql:updateDocument>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 9. Eliminar documento -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nosql="http://services.soadb.example.com/nosql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <nosql:deleteDocument>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_nosql</database_name>
+         <collection_name>usuarios</collection_name>
+         <filter_json>{"email": "juan@ejemplo.com"}</filter_json>
+      </nosql:deleteDocument>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 10. Buscar documento -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nosql="http://services.soadb.example.com/nosql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <nosql:findDocument>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_nosql</database_name>
+         <collection_name>usuarios</collection_name>
+         <filter_json>{"edad": {"$gt": 25}}</filter_json>
+         <projection_json>{"nombre": 1, "email": 1, "edad": 1}</projection_json>
+         <sort_json>[["edad", -1]]</sort_json>
+      </nosql:findDocument>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 11. Agregación de documentos -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nosql="http://services.soadb.example.com/nosql">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <nosql:aggregateDocuments>
+         <session_token>TU_TOKEN_DE_SESIÓN</session_token>
+         <database_name>mi_base_nosql</database_name>
+         <collection_name>usuarios</collection_name>
+         <pipeline_json>[
+            {"$match": {"dirección.pais": "España"}},
+            {"$group": {"_id": "$dirección.ciudad", "cantidad": {"$sum": 1}, "edad_promedio": {"$avg": "$edad"}}},
+            {"$sort": {"cantidad": -1}}
+         ]</pipeline_json>
+      </nosql:aggregateDocuments>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- SERVICIO ADMIN -->
+
+<!-- 1. Listar todos los servicios -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:adm="http://services.soadb.example.com/admin">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <adm:listAll/>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 2. Listar servicios por tipo de interfaz -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:adm="http://services.soadb.example.com/admin">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <adm:listAll>
+         <interface_type>SQL</interface_type>
+      </adm:listAll>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+<!-- 3. Obtener estado de un servicio -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:adm="http://services.soadb.example.com/admin">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <adm:getServiceHealth>
+         <service_name>sql</service_name>
+      </adm:getServiceHealth>
+   </soapenv:Body>
+</soapenv:Envelope>

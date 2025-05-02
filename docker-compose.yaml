@@ -1,0 +1,83 @@
+version: '3.8'
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  mongo_data:
+
+services:
+  # Servicio proxy para gestionar autenticación y enrutamiento
+  proxy:
+    build: ./proxy
+    ports:
+      - "8000:8000"  # Puerto principal de la aplicación
+    depends_on:
+      - app
+    networks:
+      - app_network
+    environment:
+      - APP_HOST=app
+      - APP_PORT=8080
+      - ALLOWED_IPS=192.168.1.0/24  # Ajustar según la red local
+    restart: always
+
+  # Aplicación principal con servicios SOAP
+  app:
+    build: ./app
+    ports:
+      - "8080:8080"  # Puerto interno para servicios SOAP
+    depends_on:
+      - mysql
+      - mongodb
+    networks:
+      - app_network
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=rootpassword
+      - MYSQL_DATABASE=dbservice
+      - MONGO_URI=mongodb://root:rootpassword@mongodb:27017/
+      - OAUTH_GOOGLE_CLIENT_ID=your_google_client_id
+      - OAUTH_GOOGLE_CLIENT_SECRET=your_google_client_secret
+      - OAUTH_FACEBOOK_CLIENT_ID=your_facebook_client_id
+      - OAUTH_FACEBOOK_CLIENT_SECRET=your_facebook_client_secret
+      - OAUTH_MICROSOFT_CLIENT_ID=your_microsoft_client_id
+      - OAUTH_MICROSOFT_CLIENT_SECRET=your_microsoft_client_secret
+      - SERVICE_HOST=0.0.0.0  # Escucha en todas las interfaces
+      - SERVICE_PORT=8080
+    restart: always
+
+  # Base de datos MySQL
+  mysql:
+    build: ./mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=dbservice
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+    networks:
+      - app_network
+    restart: always
+
+  # Base de datos MongoDB
+  mongodb:
+    build: ./mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=rootpassword
+      - MONGO_INITDB_DATABASE=dbservice
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./mongodb/init:/docker-entrypoint-initdb.d
+    networks:
+      - app_network
+    restart: always
