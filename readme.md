@@ -79,61 +79,6 @@ En nuestro sistema, cada servicio (Auth, SQL, NoSQL, Admin) dispone de su propio
 - **Binding**: Define el protocolo de comunicación
 - **Service**: Define los puntos finales del servicio
 
-Ejemplo simplificado de WSDL para el servicio SQL:
-
-```xml
-<definitions name="SQLService" 
-            targetNamespace="http://services.soadb.example.com/sql"
-            xmlns="http://schemas.xmlsoap.org/wsdl/"
-            xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
-            xmlns:tns="http://services.soadb.example.com/sql"
-            xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-
-    <types>
-        <schema targetNamespace="http://services.soadb.example.com/sql"
-                xmlns="http://www.w3.org/2001/XMLSchema">
-            <!-- Definición de tipos -->
-        </schema>
-    </types>
-
-    <message name="createDatabaseRequest">
-        <part name="session_token" type="xsd:string"/>
-        <part name="database_name" type="xsd:string"/>
-    </message>
-    <message name="createDatabaseResponse">
-        <part name="result" type="xsd:string"/>
-    </message>
-
-    <portType name="SQLPortType">
-        <operation name="createDatabase">
-            <input message="tns:createDatabaseRequest"/>
-            <output message="tns:createDatabaseResponse"/>
-        </operation>
-        <!-- Más operaciones -->
-    </portType>
-
-    <binding name="SQLBinding" type="tns:SQLPortType">
-        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
-        <operation name="createDatabase">
-            <soap:operation soapAction="createDatabase"/>
-            <input>
-                <soap:body use="literal"/>
-            </input>
-            <output>
-                <soap:body use="literal"/>
-            </output>
-        </operation>
-        <!-- Más operaciones -->
-    </binding>
-
-    <service name="SQLService">
-        <port name="SQLPort" binding="tns:SQLBinding">
-            <soap:address location="http://localhost:8080/soap"/>
-        </port>
-    </service>
-</definitions>
-```
-
 ## Estructura BPEL
 
 ### Definición de BPEL
@@ -198,13 +143,6 @@ El sistema implementa las siguientes medidas de seguridad:
 4. **IP Whitelisting**: Restricción de acceso por IP en el proxy.
 5. **HTTPS**: Soporte para comunicaciones seguras.
 
-## Pruebas y Monitoreo
-
-1. **Pruebas Unitarias**: Verifican la lógica de negocio de cada servicio.
-2. **Métricas**: El proxy recopila métricas de rendimiento que son expuestas en un endpoint dedicado.
-3. **Logs**: Cada componente genera logs detallados para facilitar la depuración.
-
-## Uso del Servicio
 
 ### Consulta de Servicios Disponibles
 
@@ -298,17 +236,3 @@ El sistema está contenerizado utilizando Docker, con un contenedor para cada co
 4. **MongoDB**: Base de datos NoSQL.
 
 El despliegue se realiza mediante Docker Compose, que orquesta todos los contenedores y configura la red.
-
-### Requisitos de Hardware y Software
-
-- Docker y Docker Compose
-- Al menos 4 GB de RAM
-- Al menos 10 GB de espacio en disco
-- Conexión a Internet (para la autenticación OAuth2)
-
-### Instrucciones de Despliegue
-
-1. Clonar el repositorio
-2. Configurar las variables de entorno (ver `.env.example`)
-3#   r e m o t e - s o a - d b  
- 

@@ -783,5 +783,998 @@ def sql_list_databases(parameters):
     # Validar sesión
     valid, role, message = validate_session(session_token)
     if not valid:
-        return
+        return json.dumps({"error": message})
+    
+    try:
+        # Conectar a MySQL
+        conn = mysql.connector.connect(
+            host=MYSQL_HOST,
+            port=MYSQL_PORT,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD
+        )
+        cursor = conn.cursor()
+        
+        # Obtener lista de bases de datos
+        cursor.execute("SHOW DATABASES")
+        databases = [db[0] for db in cursor.fetchall() if db[0] not in ['information_schema', 'performance_schema', 'mysql', 'sys']]
+        
+        return json.dumps({
+            "success": True,
+            "databases": databases
+        })
+        
+    except Exception as e:
+        logger.error(f"Error al listar bases de datos: {e}")
+        return json.dumps({"error": f"Error al listar bases de datos: {str(e)}"})
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
+def sql_create_database(parameters):
+    """Implementación de la operación createDatabase del servicio SQL."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    
+    # Validar parámetros
+    if not database_name:
+        return json.dumps({"error": "Se requiere el parámetro database_name"})
+    
+    # Validar sesión y permisos
+    valid, role, message = validate_session(session_token, 'admin')
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        # Validar nombre de base de datos
+        if not database_name.isalnum():
+            return json.dumps({
+                "success": False,
+                "message": "Nombre de base de datos no válido. Use solo letras y números."
+            })
+        
+        # Conectar a MySQL
+        conn = mysql.connector.connect(
+            host=MYSQL_HOST,
+            port=MYSQL_PORT,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD
+        )
+        cursor = conn.cursor()
+        
+        # Crear base de datos
+        cursor.execute(f"CREATE DATABASE {database_name}")
+        
+        return json.dumps({
+            "success": True,
+            "message": f"Base de datos '{database_name}' creada correctamente"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error al crear base de datos: {e}")
+        return json.dumps({"error": f"Error al crear base de datos: {str(e)}"})
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
+def sql_drop_database(parameters):
+    """Implementación de la operación dropDatabase del servicio SQL."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    
+    # Validar parámetros
+    if not database_name:
+        return json.dumps({"error": "Se requiere el parámetro database_name"})
+    
+    # Validar sesión y permisos
+    valid, role, message = validate_session(session_token, 'admin')
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        # Validar nombre de base de datos
+        if not database_name.isalnum() or database_name in ['information_schema', 'performance_schema', 'mysql', 'sys', 'dbservice']:
+            return json.dumps({
+                "success": False,
+                "message": "Nombre de base de datos no válido o protegido."
+            })
+        
+        # Conectar a MySQL
+        conn = mysql.connector.connect(
+            host=MYSQL_HOST,
+            port=MYSQL_PORT,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD
+        )
+        cursor = conn.cursor()
+        
+        # Eliminar base de datos
+        cursor.execute(f"DROP DATABASE {database_name}")
+        
+        return json.dumps({
+            "success": True,
+            "message": f"Base de datos '{database_name}' eliminada correctamente"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error al eliminar base de datos: {e}")
+        return json.dumps({"error": f"Error al eliminar base de datos: {str(e)}"})
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+
+# Implementaciones simplificadas de los otros métodos SQL
+def sql_list_tables(parameters):
+    """Implementación simplificada de listTables."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    
+    valid, role, message = validate_session(session_token)
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        conn = mysql.connector.connect(
+            host=MYSQL_HOST, port=MYSQL_PORT,
+            user=MYSQL_USER, password=MYSQL_PASSWORD,
+            database=database_name
+        )
+        cursor = conn.cursor()
+        cursor.execute("SHOW TABLES")
+        tables = [table[0] for table in cursor.fetchall()]
+        
+        return json.dumps({
+            "success": True,
+            "database": database_name,
+            "tables": tables
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
+def sql_create_table(parameters):
+    """Implementación simplificada de createTable."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    table_name = parameters.get('table_name')
+    fields_json = parameters.get('fields_json')
+    
+    valid, role, message = validate_session(session_token, 'editor')
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        fields = json.loads(fields_json)
+        
+        # Construir SQL para crear tabla
+        sql_parts = []
+        primary_key = None
+        
+        for field in fields:
+            name = field['name']
+            field_type = field['type'].upper()
+            nullable = field.get('nullable', True)
+            default = field.get('default')
+            auto_increment = field.get('auto_increment', False)
+            is_primary = field.get('primary_key', False)
+            
+            field_def = [f"`{name}` {field_type}"]
+            
+            if not nullable:
+                field_def.append("NOT NULL")
+            
+            if default is not None:
+                if isinstance(default, str):
+                    field_def.append(f"DEFAULT '{default}'")
+                else:
+                    field_def.append(f"DEFAULT {default}")
+            
+            if auto_increment:
+                field_def.append("AUTO_INCREMENT")
+            
+            if is_primary:
+                primary_key = name
+            
+            sql_parts.append(" ".join(field_def))
+        
+        if primary_key:
+            sql_parts.append(f"PRIMARY KEY (`{primary_key}`)")
+        
+        sql = f"CREATE TABLE `{table_name}` (\n  " + ",\n  ".join(sql_parts) + "\n)"
+        
+        conn = mysql.connector.connect(
+            host=MYSQL_HOST, port=MYSQL_PORT,
+            user=MYSQL_USER, password=MYSQL_PASSWORD,
+            database=database_name
+        )
+        cursor = conn.cursor()
+        cursor.execute(sql)
+        
+        return json.dumps({
+            "success": True,
+            "message": f"Tabla '{table_name}' creada correctamente",
+            "sql": sql
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
+def sql_drop_table(parameters):
+    """Implementación simplificada de dropTable."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    table_name = parameters.get('table_name')
+    
+    valid, role, message = validate_session(session_token, 'editor')
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        conn = mysql.connector.connect(
+            host=MYSQL_HOST, port=MYSQL_PORT,
+            user=MYSQL_USER, password=MYSQL_PASSWORD,
+            database=database_name
+        )
+        cursor = conn.cursor()
+        cursor.execute(f"DROP TABLE `{table_name}`")
+        
+        return json.dumps({
+            "success": True,
+            "message": f"Tabla '{table_name}' eliminada correctamente"
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
+def sql_insert(parameters):
+    """Implementación simplificada de insert."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    table_name = parameters.get('table_name')
+    data_json = parameters.get('data_json')
+    
+    valid, role, message = validate_session(session_token, 'editor')
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        data = json.loads(data_json)
+        if isinstance(data, dict):
+            data = [data]
+        
+        columns = list(data[0].keys())
+        placeholders = ", ".join(["%s"] * len(columns))
+        
+        sql = f"INSERT INTO `{table_name}` ({', '.join([f'`{col}`' for col in columns])}) VALUES ({placeholders})"
+        
+        values = []
+        for item in data:
+            row = [item[col] for col in columns]
+            values.append(row)
+        
+        conn = mysql.connector.connect(
+            host=MYSQL_HOST, port=MYSQL_PORT,
+            user=MYSQL_USER, password=MYSQL_PASSWORD,
+            database=database_name
+        )
+        cursor = conn.cursor()
+        cursor.executemany(sql, values)
+        conn.commit()
+        
+        return json.dumps({
+            "success": True,
+            "message": f"Se insertaron {cursor.rowcount} registros en la tabla '{table_name}'",
+            "rows_affected": cursor.rowcount
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
+def sql_update(parameters):
+    """Implementación simplificada de update."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    table_name = parameters.get('table_name')
+    data_json = parameters.get('data_json')
+    where_json = parameters.get('where_json')
+    
+    valid, role, message = validate_session(session_token, 'editor')
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        data = json.loads(data_json)
+        where_conditions = json.loads(where_json) if where_json else {}
+        
+        set_clause = ", ".join([f"`{col}` = %s" for col in data.keys()])
+        set_values = list(data.values())
+        
+        sql = f"UPDATE `{table_name}` SET {set_clause}"
+        
+        where_values = []
+        if where_conditions:
+            where_clause = " AND ".join([f"`{col}` = %s" for col in where_conditions.keys()])
+            where_values = list(where_conditions.values())
+            sql += f" WHERE {where_clause}"
+        
+        conn = mysql.connector.connect(
+            host=MYSQL_HOST, port=MYSQL_PORT,
+            user=MYSQL_USER, password=MYSQL_PASSWORD,
+            database=database_name
+        )
+        cursor = conn.cursor()
+        cursor.execute(sql, set_values + where_values)
+        conn.commit()
+        
+        return json.dumps({
+            "success": True,
+            "message": f"Se actualizaron {cursor.rowcount} registros en la tabla '{table_name}'",
+            "rows_affected": cursor.rowcount
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
+def sql_delete(parameters):
+    """Implementación simplificada de delete."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    table_name = parameters.get('table_name')
+    where_json = parameters.get('where_json')
+    
+    valid, role, message = validate_session(session_token, 'editor')
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        where_conditions = json.loads(where_json) if where_json else {}
+        
+        sql = f"DELETE FROM `{table_name}`"
+        
+        where_values = []
+        if where_conditions:
+            where_clause = " AND ".join([f"`{col}` = %s" for col in where_conditions.keys()])
+            where_values = list(where_conditions.values())
+            sql += f" WHERE {where_clause}"
+        
+        conn = mysql.connector.connect(
+            host=MYSQL_HOST, port=MYSQL_PORT,
+            user=MYSQL_USER, password=MYSQL_PASSWORD,
+            database=database_name
+        )
+        cursor = conn.cursor()
+        cursor.execute(sql, where_values)
+        conn.commit()
+        
+        return json.dumps({
+            "success": True,
+            "message": f"Se eliminaron {cursor.rowcount} registros de la tabla '{table_name}'",
+            "rows_affected": cursor.rowcount
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
+def sql_select(parameters):
+    """Implementación simplificada de select."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    table_name = parameters.get('table_name')
+    fields = parameters.get('fields', '*')
+    where_json = parameters.get('where_json')
+    
+    valid, role, message = validate_session(session_token)
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        where_conditions = json.loads(where_json) if where_json else {}
+        
+        sql = f"SELECT {fields} FROM `{table_name}`"
+        
+        where_values = []
+        if where_conditions:
+            where_clause = " AND ".join([f"`{col}` = %s" for col in where_conditions.keys()])
+            where_values = list(where_conditions.values())
+            sql += f" WHERE {where_clause}"
+        
+        conn = mysql.connector.connect(
+            host=MYSQL_HOST, port=MYSQL_PORT,
+            user=MYSQL_USER, password=MYSQL_PASSWORD,
+            database=database_name
+        )
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(sql, where_values)
+        results = cursor.fetchall()
+        
+        # Convertir resultados a formato serializable
+        serializable_results = []
+        for row in results:
+            serializable_row = {}
+            for key, value in row.items():
+                if isinstance(value, (datetime.date, datetime.datetime)):
+                    serializable_row[key] = value.isoformat()
+                elif isinstance(value, (bytes, bytearray)):
+                    serializable_row[key] = value.hex()
+                else:
+                    serializable_row[key] = value
+            serializable_results.append(serializable_row)
+        
+        return json.dumps({
+            "success": True,
+            "database": database_name,
+            "table": table_name,
+            "count": len(serializable_results),
+            "data": serializable_results
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
+def sql_join(parameters):
+    """Implementación simplificada de join."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    join_query = parameters.get('join_query')
+    params_json = parameters.get('params_json')
+    
+    valid, role, message = validate_session(session_token)
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        params = json.loads(params_json) if params_json else []
+        
+        if not join_query.strip().lower().startswith('select'):
+            join_query = 'SELECT * ' + join_query
+        
+        conn = mysql.connector.connect(
+            host=MYSQL_HOST, port=MYSQL_PORT,
+            user=MYSQL_USER, password=MYSQL_PASSWORD,
+            database=database_name
+        )
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(join_query, params)
+        results = cursor.fetchall()
+        
+        # Convertir resultados a formato serializable
+        serializable_results = []
+        for row in results:
+            serializable_row = {}
+            for key, value in row.items():
+                if isinstance(value, (datetime.date, datetime.datetime)):
+                    serializable_row[key] = value.isoformat()
+                elif isinstance(value, (bytes, bytearray)):
+                    serializable_row[key] = value.hex()
+                else:
+                    serializable_row[key] = value
+            serializable_results.append(serializable_row)
+        
+        return json.dumps({
+            "success": True,
+            "database": database_name,
+            "count": len(serializable_results),
+            "data": serializable_results
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
+def sql_aggregate(parameters):
+    """Implementación simplificada de aggregate."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    table_name = parameters.get('table_name')
+    operation = parameters.get('operation')
+    field = parameters.get('field')
+    group_by = parameters.get('group_by')
+    where_json = parameters.get('where_json')
+    
+    valid, role, message = validate_session(session_token)
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        where_conditions = json.loads(where_json) if where_json else {}
+        
+        # Construir SQL para la agregación
+        if operation.upper() == 'DISTINCT':
+            sql = f"SELECT DISTINCT `{field}` FROM `{table_name}`"
+        else:
+            sql = f"SELECT {operation.upper()}(`{field}`) as result"
+            
+            if group_by:
+                sql += f", `{group_by}`"
+            
+            sql += f" FROM `{table_name}`"
+            
+            if group_by:
+                sql += f" GROUP BY `{group_by}`"
+        
+        # Agregar condiciones WHERE si existen
+        where_values = []
+        if where_conditions:
+            where_clause = " AND ".join([f"`{col}` = %s" for col in where_conditions.keys()])
+            where_values = list(where_conditions.values())
+            sql += f" WHERE {where_clause}"
+        
+        conn = mysql.connector.connect(
+            host=MYSQL_HOST, port=MYSQL_PORT,
+            user=MYSQL_USER, password=MYSQL_PASSWORD,
+            database=database_name
+        )
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(sql, where_values)
+        results = cursor.fetchall()
+        
+        # Convertir resultados a formato serializable
+        serializable_results = []
+        for row in results:
+            serializable_row = {}
+            for key, value in row.items():
+                if isinstance(value, (datetime.date, datetime.datetime)):
+                    serializable_row[key] = value.isoformat()
+                elif isinstance(value, (bytes, bytearray)):
+                    serializable_row[key] = value.hex()
+                else:
+                    serializable_row[key] = value
+            serializable_results.append(serializable_row)
+        
+        return json.dumps({
+            "success": True,
+            "database": database_name,
+            "table": table_name,
+            "operation": operation,
+            "field": field,
+            "group_by": group_by,
+            "count": len(serializable_results),
+            "data": serializable_results
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
+# Implementaciones de los servicios NoSQL
+def nosql_list_databases(parameters):
+    """Implementación de la operación listDatabases del servicio NoSQL."""
+    session_token = parameters.get('session_token')
+    
+    # Validar sesión
+    valid, role, message = validate_session(session_token)
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        # Conectar a MongoDB
+        client = MongoClient(MONGO_URI)
+        
+        # Obtener lista de bases de datos
+        system_dbs = ['admin', 'local', 'config']
+        databases = [db for db in client.list_database_names() if db not in system_dbs]
+        
+        return json.dumps({
+            "success": True,
+            "databases": databases
+        })
+        
+    except Exception as e:
+        logger.error(f"Error al listar bases de datos: {e}")
+        return json.dumps({"error": f"Error al listar bases de datos: {str(e)}"})
+    finally:
+        if 'client' in locals():
+            client.close()
+
+# Implementaciones simplificadas de los otros métodos NoSQL
+def nosql_create_database(parameters):
+    """Implementación simplificada de createDatabase."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    
+    valid, role, message = validate_session(session_token, 'admin')
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        client = MongoClient(MONGO_URI)
+        db = client[database_name]
+        db.create_collection('_temp')
+        
+        return json.dumps({
+            "success": True,
+            "message": f"Base de datos '{database_name}' creada correctamente"
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'client' in locals():
+            client.close()
+
+def nosql_drop_database(parameters):
+    """Implementación simplificada de dropDatabase."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    
+    valid, role, message = validate_session(session_token, 'admin')
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        client = MongoClient(MONGO_URI)
+        client.drop_database(database_name)
+        
+        return json.dumps({
+            "success": True,
+            "message": f"Base de datos '{database_name}' eliminada correctamente"
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'client' in locals():
+            client.close()
+
+def nosql_list_collections(parameters):
+    """Implementación simplificada de listCollections."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    
+    valid, role, message = validate_session(session_token)
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        client = MongoClient(MONGO_URI)
+        db = client[database_name]
+        collections = db.list_collection_names()
+        
+        return json.dumps({
+            "success": True,
+            "database": database_name,
+            "collections": collections
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'client' in locals():
+            client.close()
+
+def nosql_create_collection(parameters):
+    """Implementación simplificada de createCollection."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    collection_name = parameters.get('collection_name')
+    
+    valid, role, message = validate_session(session_token, 'editor')
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        client = MongoClient(MONGO_URI)
+        db = client[database_name]
+        db.create_collection(collection_name)
+        
+        return json.dumps({
+            "success": True,
+            "message": f"Colección '{collection_name}' creada correctamente"
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'client' in locals():
+            client.close()
+
+def nosql_drop_collection(parameters):
+    """Implementación simplificada de dropCollection."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    collection_name = parameters.get('collection_name')
+    
+    valid, role, message = validate_session(session_token, 'editor')
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        client = MongoClient(MONGO_URI)
+        db = client[database_name]
+        db.drop_collection(collection_name)
+        
+        return json.dumps({
+            "success": True,
+            "message": f"Colección '{collection_name}' eliminada correctamente"
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'client' in locals():
+            client.close()
+
+def nosql_insert_document(parameters):
+    """Implementación simplificada de insertDocument."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    collection_name = parameters.get('collection_name')
+    documents_json = parameters.get('documents_json')
+    
+    valid, role, message = validate_session(session_token, 'editor')
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        docs = json.loads(documents_json)
+        if isinstance(docs, dict):
+            docs = [docs]
+        
+        client = MongoClient(MONGO_URI)
+        db = client[database_name]
+        collection = db[collection_name]
+        
+        result = collection.insert_many(docs)
+        inserted_ids = [str(id) for id in result.inserted_ids]
+        
+        return json.dumps({
+            "success": True,
+            "message": f"Se insertaron {len(inserted_ids)} documentos",
+            "inserted_ids": inserted_ids
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'client' in locals():
+            client.close()
+
+def nosql_update_document(parameters):
+    """Implementación simplificada de updateDocument."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    collection_name = parameters.get('collection_name')
+    filter_json = parameters.get('filter_json')
+    update_json = parameters.get('update_json')
+    
+    valid, role, message = validate_session(session_token, 'editor')
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        filter_query = json.loads(filter_json)
+        update = json.loads(update_json)
+        
+        if not any(key.startswith('$') for key in update.keys()):
+            update = {'$set': update}
+        
+        client = MongoClient(MONGO_URI)
+        db = client[database_name]
+        collection = db[collection_name]
+        
+        result = collection.update_many(filter_query, update)
+        
+        return json.dumps({
+            "success": True,
+            "message": f"Se actualizaron {result.modified_count} documentos",
+            "matched_count": result.matched_count,
+            "modified_count": result.modified_count
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'client' in locals():
+            client.close()
+
+def nosql_delete_document(parameters):
+    """Implementación simplificada de deleteDocument."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    collection_name = parameters.get('collection_name')
+    filter_json = parameters.get('filter_json')
+    
+    valid, role, message = validate_session(session_token, 'editor')
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        filter_query = json.loads(filter_json)
+        
+        client = MongoClient(MONGO_URI)
+        db = client[database_name]
+        collection = db[collection_name]
+        
+        result = collection.delete_many(filter_query)
+        
+        return json.dumps({
+            "success": True,
+            "message": f"Se eliminaron {result.deleted_count} documentos",
+            "deleted_count": result.deleted_count
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'client' in locals():
+            client.close()
+
+def nosql_find_document(parameters):
+    """Implementación simplificada de findDocument."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    collection_name = parameters.get('collection_name')
+    filter_json = parameters.get('filter_json')
+    projection_json = parameters.get('projection_json')
+    sort_json = parameters.get('sort_json')
+    
+    valid, role, message = validate_session(session_token)
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        filter_query = json.loads(filter_json) if filter_json else {}
+        projection = json.loads(projection_json) if projection_json else None
+        sort = json.loads(sort_json) if sort_json else None
+        
+        client = MongoClient(MONGO_URI)
+        db = client[database_name]
+        collection = db[collection_name]
+        
+        cursor = collection.find(filter_query, projection)
+        
+        if sort:
+            cursor = cursor.sort(sort)
+        
+        # Convertir cursor a lista
+        documents = list(cursor)
+        
+        # Serializar documentos a JSON
+        import json
+        from bson import json_util
+        
+        return json_util.dumps({
+            "success": True,
+            "database": database_name,
+            "collection": collection_name,
+            "count": len(documents),
+            "documents": documents
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'client' in locals():
+            client.close()
+
+def nosql_aggregate_documents(parameters):
+    """Implementación simplificada de aggregateDocuments."""
+    session_token = parameters.get('session_token')
+    database_name = parameters.get('database_name')
+    collection_name = parameters.get('collection_name')
+    pipeline_json = parameters.get('pipeline_json')
+    
+    valid, role, message = validate_session(session_token)
+    if not valid:
+        return json.dumps({"error": message})
+    
+    try:
+        pipeline = json.loads(pipeline_json)
+        
+        client = MongoClient(MONGO_URI)
+        db = client[database_name]
+        collection = db[collection_name]
+        
+        result = list(collection.aggregate(pipeline))
+        
+        # Serializar documentos a JSON
+        import json
+        from bson import json_util
+        
+        return json_util.dumps({
+            "success": True,
+            "database": database_name,
+            "collection": collection_name,
+            "count": len(result),
+            "result": result
+        })
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'client' in locals():
+            client.close()
+
+# Implementaciones de los servicios Admin
+def admin_list_all(parameters):
+    """Implementación de la operación listAll del servicio Admin."""
+    interface_type = parameters.get('interface_type')
+    
+    services_info = {
+        "auth": {
+            "methods": [
+                {"name": "login", "description": "Autenticación mediante OAuth2"},
+                {"name": "logout", "description": "Cierra la sesión actual"},
+                {"name": "register", "description": "Registra un nuevo usuario"},
+                {"name": "validateToken", "description": "Valida un token de sesión"},
+                {"name": "getUserRole", "description": "Obtiene el rol del usuario actual"}
+            ]
+        },
+        "sql": {
+            "methods": [
+                {"name": "createDatabase", "description": "Crea una nueva base de datos SQL"},
+                {"name": "dropDatabase", "description": "Elimina una base de datos SQL"},
+                {"name": "listDatabases", "description": "Lista todas las bases de datos SQL disponibles"},
+                {"name": "createTable", "description": "Crea una nueva tabla en una base de datos SQL"},
+                {"name": "dropTable", "description": "Elimina una tabla de una base de datos SQL"},
+                {"name": "listTables", "description": "Lista todas las tablas de una base de datos SQL"},
+                {"name": "insert", "description": "Inserta registros en una tabla SQL"},
+                {"name": "update", "description": "Actualiza registros en una tabla SQL"},
+                {"name": "delete", "description": "Elimina registros de una tabla SQL"},
+                {"name": "select", "description": "Consulta registros de una o varias tablas SQL"},
+                {"name": "join", "description": "Realiza un JOIN entre tablas SQL"},
+                {"name": "aggregate", "description": "Realiza operaciones de agregación (SUM, COUNT, DISTINCT, AVG)"}
+            ]
+        },
+        "nosql": {
+            "methods": [
+                {"name": "createDatabase", "description": "Crea una nueva base de datos NoSQL"},
+                {"name": "dropDatabase", "description": "Elimina una base de datos NoSQL"},
+                {"name": "listDatabases", "description": "Lista todas las bases de datos NoSQL disponibles"},
+                {"name": "createCollection", "description": "Crea una nueva colección en una base de datos NoSQL"},
+                {"name": "dropCollection", "description": "Elimina una colección de una base de datos NoSQL"},
+                {"name": "listCollections", "description": "Lista todas las colecciones de una base de datos NoSQL"},
+                {"name": "insertDocument", "description": "Inserta documentos en una colección NoSQL"},
+                {"name": "updateDocument", "description": "Actualiza documentos en una colección NoSQL"},
+                {"name": "deleteDocument", "description": "Elimina documentos de una colección NoSQL"},
+                {"name": "findDocument", "description": "Busca documentos en una colección NoSQL"},
+                {"name": "aggregateDocuments", "description": "Realiza operaciones de agregación en documentos NoSQL"}
+            ]
+        },
+        "admin": {
+            "methods": [
+                {"name": "listAll", "description": "Lista todos los servicios disponibles y sus métodos"},
+                {"name": "getServiceHealth", "description": "Obtiene el estado de salud de un servicio específico"}
+            ]
+        }
+    }
+    
+    # Filtrar por tipo de interfaz si se especifica
+    if interface_type:
+        if interface_type.upper() == "SQL":
+            return json.dumps({"sql": services_info["sql"]})
+        elif interface_type.upper() == "NOSQL":
+            return json.dumps({"nosql": services_info["nosql"]})
+        else:
+            return json.dumps({"error": f"Tipo de interfaz no válido: {interface_type}"})
+    
+    return json.dumps(services_info)
+
+def admin_get_service_health(parameters):
+    """Implementación de la operación getServiceHealth del servicio Admin."""
+    service_name = parameters.get('service_name')
+    
+    if service_name not in ['auth', 'sql', 'nosql', 'admin']:
+        return json.dumps({"status": "error", "message": f"Servicio no encontrado: {service_name}"})
+    
+    # En un entorno real, aquí verificaríamos la salud real del servicio
+    return json.dumps({"status": "healthy", "service": service_name})
+
+# Iniciar el servidor si este script se ejecuta directamente
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=8080)()
+            
+          
 
