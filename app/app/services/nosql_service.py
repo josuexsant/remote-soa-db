@@ -441,4 +441,49 @@ class NoSQLService(ServiceBase):
                     "success": False,
                     "message": "Nombre de colección no válido."
                 })
+            
+            # Parsear documentos
+            try:
+                documents = json.loads(documents_json)
+                if not isinstance(documents, list):
+                    documents = [documents]
+            except json.JSONDecodeError:
+                return json.dumps({
+                    "success": False,
+                    "message": "Formato de documentos no válido. Debe ser JSON."
+                })
+            
+            # Conectar a MongoDB
+            client = MongoClient(MONGO_URI)
+            
+            # Verificar si la base de datos y la colección existen
+            if database_name not in client.list_database_names():
+                return json.dumps({
+                    "success": False,
+                    "message": f"Base de datos '{database_name}' no encontrada"
+                })
+            
+            db = client[database_name]
+            if collection_name not in db.list_collection_names():
+                return json.dumps({
+                    "success": False,
+                    "message": f"Colección '{collection_name}' no encontrada"
+                })
+            
+            # Insertar documentos
+            collection = db[collection_name]
+            result = collection.insert_many(documents)
+            
+            return json.dumps({
+                "success": True,
+                "message": f"{len(result.inserted_ids)} documentos insertados correctamente",
+                "inserted_ids": [str(doc_id) for doc_id in result.inserted_ids]
+            })
+            
+        except Exception as e:
+            logger.error(f"Error al insertar documentos: {e}")
+            return json.dumps({"error": f"Error al insertar documentos: {str(e)}"})
+        finally:
+            if 'client' in locals():
+                client.close()
               
