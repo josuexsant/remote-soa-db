@@ -11,4 +11,5 @@ COPY ./app /app
 EXPOSE 8080
 
 # Comando para iniciar el servidor de aplicaciones
-CMD ["python", "main.py"]
+# Cambiamos de main.py a new_main.py para usar la implementación nueva
+CMD ["python", "new_main.py"]

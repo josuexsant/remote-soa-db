@@ -79,12 +79,15 @@ load_ip_whitelist()
 
 def is_ip_allowed(ip):
     """Comprueba si una IP está en la lista blanca."""
-    try:
+    """try:
         client_ip = ipaddress.ip_address(ip)
         return any(client_ip in network for network in allowed_ip_networks)
     except ValueError:
         logger.error(f"Formato de IP incorrecto: {ip}")
-        return False
+        return False"""
+        
+    # hacemos que todas las IPs estan autorizadas
+    return True
 
 @app.before_request
 def before_request():
@@ -154,7 +157,7 @@ def soap_proxy():
                 "Content-Type": content_type,
                 "SOAPAction": request.headers.get("SOAPAction", ""),
             },
-            timeout=30,
+            timeout=300,
         )
         
         # Registrar tiempo de respuesta
