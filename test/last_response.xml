@@ -1,0 +1,5 @@
+<ns0:Envelope xmlns:ns0="http://schemas.xmlsoap.org/soap/envelope/">
+  <ns0:Body>
+    <ns1:listTablesResponse xmlns:ns1="http://services.soadb.example.com/sql">{"success": true, "database": "dbservice", "tables": ["estudiantes", "sessions", "users"]}</ns1:listTablesResponse>
+  </ns0:Body>
+</ns0:Envelope>
